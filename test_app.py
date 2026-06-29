@@ -19,3 +19,9 @@ def test_health(client):
     response = client.get('/health')
     assert response.status_code == 200
     assert response.json == {"status": "healthy"}
+
+
+def test_404(client):
+    response = client.get('/invalid-route')
+    assert response.status_code == 404
+
