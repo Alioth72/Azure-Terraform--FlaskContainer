@@ -1,3 +1,28 @@
+# None of the packages below have their versions pinned. Unpinned dependencies
+# lead to non-reproducible builds — a `pip install` run on a different date may
+# pull in a newer, potentially breaking version of Flask (e.g., 2.x vs 3.x have
+# differences in JSON handling that would break the tests). Pin every package:
+#
+#   flask==3.0.3
+#   gunicorn==22.0.0     # see Issue 1 in the review
+#   pytest==8.2.2
+#   flake8==7.1.0
+#
+# Use `pip freeze > requirements.txt` after verifying locally, or adopt
+# a lock-file workflow (pip-compile / uv lock) for stricter reproducibility.
 flask
+
+# `pytest` and `flake8` are CI/development tools, not runtime dependencies of
+# the Flask application. Including them here means they get installed inside the
+# production Docker image, which:
+#   - Increases image size (more layers, longer pull times)
+#   - Expands the container's attack surface unnecessarily
+#
+# Recommended fix: split into two files:
+#   requirements.txt      — runtime only: flask, gunicorn
+#   requirements-dev.txt  — dev + CI: -r requirements.txt, pytest, flake8
+#
+# Then update the Dockerfile to use `requirements.txt`, and the CI
+# `test-and-lint` job to use `requirements-dev.txt`.
 pytest
 flake8
