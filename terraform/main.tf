@@ -18,9 +18,6 @@ provider "azurerm" {
   features {}
 }
 
-#=========================================
-# RESOURCE GROUP
-#=========================================
 resource "azurerm_resource_group" "rg" {
   name     = var.resource_group_name
   location = var.location
@@ -58,6 +55,13 @@ resource "azurerm_user_assigned_identity" "app_identity" {
   resource_group_name = azurerm_resource_group.rg.name
 }
 
+resource "azurerm_role_assignment" "app_identity_reader" {
+  scope                = azurerm_resource_group.rg.id
+  role_definition_name = "Reader"
+  principal_id         = azurerm_user_assigned_identity.app_identity.principal_id
+}
+
+
 #=========================================
 # AZURE CONTAINER APP
 #=========================================
@@ -90,4 +94,35 @@ resource "azurerm_container_app" "api" {
       memory = "0.5Gi"
     }
   }
+}
+
+#=========================================
+# CUSTOM MINIMUM ACCESS IAM ROLE (DATABASE ONLY)
+#=========================================
+data "azurerm_subscription" "primary" {}
+
+resource "azurerm_role_definition" "db_role" {
+  name        = "IAM min role"
+  scope       = data.azurerm_subscription.primary.id
+  description = "Custom role with minimum permissions, granting access only to SQL and Cosmos DB databases."
+
+  permissions {
+    actions = [
+      # Microsoft SQL Database Actions
+      "Microsoft.Sql/servers/databases/read",
+      "Microsoft.Sql/servers/databases/write",
+      "Microsoft.Sql/servers/databases/delete",
+      "Microsoft.Sql/servers/read",
+      # Microsoft Cosmos DB (DocumentDB) Actions
+      "Microsoft.DocumentDB/databaseAccounts/read",
+      "Microsoft.DocumentDB/databaseAccounts/write",
+      "Microsoft.DocumentDB/databaseAccounts/sqlDatabases/read",
+      "Microsoft.DocumentDB/databaseAccounts/sqlDatabases/write"
+    ]
+    not_actions = []
+  }
+
+  assignable_scopes = [
+    data.azurerm_subscription.primary.id
+  ]
 }
