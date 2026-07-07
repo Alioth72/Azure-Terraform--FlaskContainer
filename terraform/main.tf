@@ -61,6 +61,12 @@ resource "azurerm_role_assignment" "app_identity_reader" {
   principal_id         = azurerm_user_assigned_identity.app_identity.principal_id
 }
 
+resource "azurerm_role_assignment" "app_identity_db_access" {
+  scope              = azurerm_resource_group.rg.id
+  role_definition_id = azurerm_role_definition.db_role.role_definition_resource_id
+  principal_id       = azurerm_user_assigned_identity.app_identity.principal_id
+}
+
 
 #=========================================
 # AZURE CONTAINER APP
