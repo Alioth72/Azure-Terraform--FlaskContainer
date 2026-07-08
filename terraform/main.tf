@@ -26,6 +26,25 @@ resource "azurerm_resource_group" "rg" {
 #=========================================
 # MONITORING & ENVIRONMENT (Logs and Environment)
 #=========================================
+# NIT COMMENT - RECOMMENDATED AS ENHANCEMENT
+# The names of every resource below ("law-simple-api", "cae-simple-api",
+# "id-simple-api", "ca-simple-api") are hard-coded strings. If this Terraform
+# config is ever reused for a second environment (e.g., staging vs. production),
+# or if the app is renamed, every name must be changed manually across the file.
+# This also means two `terraform apply` runs for different environments would
+# collide on the same Azure resource names and fail.
+#
+# Recommended fix: add a `prefix` (or `environment`) variable and use it:
+#
+#   variable "prefix" {
+#     type    = string
+#     default = "simple-api"
+#   }
+#
+#   resource "azurerm_log_analytics_workspace" "law" {
+#     name = "law-${var.prefix}"
+#     ...
+#   }
 resource "azurerm_log_analytics_workspace" "law" {
   name                = "law-simple-api"
   location            = azurerm_resource_group.rg.location

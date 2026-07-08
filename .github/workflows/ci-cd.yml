@@ -6,6 +6,12 @@ on:
   push:
     branches: [ main ]
 
+# On pull_request events, there is no job that runs `terraform plan` and posts
+# the output as a PR comment. Reviewers have no way to see what infrastructure
+# will change before approving. Consider adding a dedicated `terraform-plan` job
+# that runs on pull_request, executes `terraform plan`, and posts the output via
+# actions/github-script or a community action like `dflook/terraform-plan`.
+
 env:
   REGISTRY: ghcr.io
   IMAGE_NAME: ${{ github.repository }}
@@ -94,6 +100,17 @@ jobs:
         run: terraform init
         working-directory: ./terraform
 
+      # `terraform apply -auto-approve` is being called without a prior `plan` step.
+      # This means any infrastructure-destroying change will be applied automatically with no human
+      # review gate. In production this can cause accidental deletions of databases,
+      # networking, etc.
+      #
+      # Recommended fix — split into two steps:
+      #   1. `terraform plan -out=tfplan -var="container_image=${IMAGE_LOWER}"`
+      #   2. `terraform apply -auto-approve tfplan`
+      #
+      # Saving the plan as an artifact and applying it (rather than re-planning at
+      # apply time) also guarantees that what was reviewed is exactly what gets applied.
       - name: Terraform Apply
         run: |
           IMAGE_LOWER=$(echo "ghcr.io/${{ github.repository }}:main" | tr '[:upper:]' '[:lower:]')
